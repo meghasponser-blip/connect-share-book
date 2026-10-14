@@ -1,0 +1,10 @@
+{
+  "source": "code-archive (pixel-perfect-replica-main.zip, Lovable TanStack export)",
+  "capabilities": [
+    {"capability": "app code (routes, components, lib)", "source": "archive src/", "outcome": "migrate", "status": "in_progress", "next_action": "copy into project"},
+    {"capability": "database schema (10 tables via drizzle migration)", "source": "drizzle/migrations/0000_migration.sql", "outcome": "migrate", "status": "pending", "next_action": "enable Lovable Cloud and apply as Supabase migration"},
+    {"capability": "auth (Lovable Cloud auth / Supabase)", "source": "src/integrations/supabase, src/lib/auth.tsx", "outcome": "migrate", "status": "pending", "next_action": "enable Lovable Cloud"},
+    {"capability": "records", "source": "none attached", "outcome": "pending", "status": "blocked", "next_action": "request CSV/JSON exports after preview"},
+    {"capability": "secrets (.env: LOVABLE_DB_MIGRATION_URL)", "source": ".env excluded", "outcome": "replace", "status": "pending", "next_action": "provided by Lovable Cloud"}
+  ]
+}
