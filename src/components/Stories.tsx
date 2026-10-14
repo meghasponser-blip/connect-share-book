@@ -9,8 +9,10 @@ import { CONTENT_SELECT, type Content } from "@/lib/content";
 import { timeAgo } from "@/lib/media";
 import { UserAvatar } from "./UserAvatar";
 import { Button } from "./ui/button";
+import { createPortal } from "react-dom";
+import { demoStories } from "@/lib/demo-content";
 
-type Group = { authorId: string; author: Content["author"]; stories: Content[]; unseen: boolean };
+type Group = { authorId: string; author: Pick<Content["author"], "username" | "display_name" | "avatar_url">; stories: Pick<Content, "id" | "title" | "description" | "category" | "media_url" | "media_kind" | "created_at">[]; unseen: boolean; demo?: boolean };
 
 export function useStoryGroups() {
   const { userId } = useAuth();
@@ -39,7 +41,8 @@ export function useStoryGroups() {
 
 export function StoriesRail() {
   const { profile, userId } = useAuth();
-  const { data: groups = [], isLoading } = useStoryGroups();
+  const { data: realGroups = [], isLoading } = useStoryGroups();
+  const groups = useMemo(() => [...realGroups, ...demoStories], [realGroups]);
   const [openIdx, setOpenIdx] = useState<number | null>(null);
   const [viewerGroups, setViewerGroups] = useState<Group[]>([]);
   const openStory = (index: number) => { setViewerGroups(groups); setOpenIdx(index); };
@@ -100,8 +103,8 @@ export function StoriesRail() {
           </Button>
         ))}
       </div>
-      {openIdx !== null && groups[openIdx] && (
-        <StoryViewer groups={viewerGroups} start={openIdx} onClose={() => setOpenIdx(null)} />
+      {openIdx !== null && viewerGroups[openIdx] && createPortal(
+        <StoryViewer groups={viewerGroups} start={openIdx} onClose={() => setOpenIdx(null)} />, document.body
       )}
     </>
   );
@@ -131,9 +134,9 @@ function StoryViewer({ groups, start, onClose }: { groups: Group[]; start: numbe
 
   useEffect(() => { setProgress(0); }, [gi, si]);
   useEffect(() => {
-    if (!s || !userId) return;
+    if (!s || !userId || g.demo) return;
     supabase.from("story_views").upsert({ content_id: s.id, user_id: userId }).then(() => qc.invalidateQueries({ queryKey: ["stories"] }));
-  }, [s, userId, qc]);
+  }, [s, userId, qc, g.demo]);
   useEffect(() => {
     if (paused || s?.media_kind === "video") return;
     const t = setInterval(() => setProgress((p) => { if (p >= 100) { next(); return 0; } return p + 2; }), 100);
@@ -156,10 +159,10 @@ function StoryViewer({ groups, start, onClose }: { groups: Group[]; start: numbe
   };
 
   return (
-    <div className="fixed inset-0 z-50 grid place-items-center bg-background/95 backdrop-blur"
+    <div role="dialog" aria-modal="true" aria-label="Story viewer" className="fixed inset-0 z-50 grid place-items-center bg-background/95 backdrop-blur"
       onTouchStart={(e) => (touch.current = e.touches[0].clientX)}
       onTouchEnd={(e) => { if (touch.current == null) return; const dx = e.changedTouches[0].clientX - touch.current; if (dx < -50) next(); if (dx > 50) prev(); touch.current = null; }}>
-      <button onClick={onClose} className="absolute right-4 top-4 z-10 rounded-full bg-secondary p-2" aria-label="Close"><X className="h-5 w-5" /></button>
+      <Button variant="secondary" size="icon" onClick={onClose} className="absolute right-4 top-4 z-20 rounded-full" aria-label="Close"><X className="h-5 w-5" /></Button>
       <div className="relative flex h-full w-full max-w-md flex-col overflow-hidden bg-card sm:h-[90vh] sm:rounded-3xl">
         <div className="absolute inset-x-3 top-3 z-10 flex gap-1">
           {g.stories.map((_, i) => (
@@ -168,15 +171,15 @@ function StoryViewer({ groups, start, onClose }: { groups: Group[]; start: numbe
             </div>
           ))}
         </div>
-        <Link to="/u/$username" params={{ username: g.author.username }} onClick={onClose} className="absolute left-3 top-7 z-10 flex items-center gap-2">
+        <div className="absolute left-3 right-14 top-7 z-10 flex items-center gap-2">
           <UserAvatar src={g.author.avatar_url} name={g.author.display_name} size={34} />
-          <span className="text-sm font-semibold">{g.author.username}</span>
-          <span className="text-xs text-muted-foreground">{timeAgo(s.created_at)}</span>
-        </Link>
+          {g.demo ? <span className="truncate text-sm font-semibold">{g.author.username}</span> : <Link to="/u/$username" params={{ username: g.author.username }} onClick={onClose} className="truncate text-sm font-semibold">{g.author.username}</Link>}
+          <span className="shrink-0 text-xs text-muted-foreground">{g.demo ? "Demo" : timeAgo(s.created_at)}</span>
+        </div>
         <div className="relative flex flex-1 items-center justify-center bg-gradient-primary">
           {s.media_url && (s.media_kind === "video"
             ? <video key={s.id} src={s.media_url} autoPlay playsInline className="h-full w-full object-contain" onEnded={next} onTimeUpdate={(e) => setProgress((e.currentTarget.currentTime / (e.currentTarget.duration || 1)) * 100)} />
-            : <img src={s.media_url} alt="" className="h-full w-full object-cover" />)}
+            : <img src={s.media_url} alt={s.title} className="absolute inset-0 h-full w-full object-cover" />)}
           {(s.title || s.category) && (
             <div className="pointer-events-none absolute inset-x-6 top-1/3 text-center">
               {s.category && <div className="mb-2 text-6xl">{s.category}</div>}
@@ -184,10 +187,10 @@ function StoryViewer({ groups, start, onClose }: { groups: Group[]; start: numbe
             </div>
           )}
           {s.description && <p className="absolute inset-x-4 bottom-4 rounded-xl bg-background/70 p-3 text-sm">{s.description}</p>}
-          <button className="absolute inset-y-0 left-0 w-1/3" onClick={prev} aria-label="Previous"><ChevronLeft className="ml-2 h-6 w-6 opacity-0 hover:opacity-80" /></button>
-          <button className="absolute inset-y-0 right-0 w-1/3" onClick={next} aria-label="Next"><ChevronRight className="ml-auto mr-2 h-6 w-6 opacity-0 hover:opacity-80" /></button>
+          <Button variant="ghost" className="absolute inset-y-0 left-0 h-full w-1/3 justify-start rounded-none hover:bg-transparent" onClick={prev} aria-label="Previous"><ChevronLeft className="rounded-full bg-background/50" /></Button>
+          <Button variant="ghost" className="absolute inset-y-0 right-0 h-full w-1/3 justify-end rounded-none hover:bg-transparent" onClick={next} aria-label="Next"><ChevronRight className="rounded-full bg-background/50" /></Button>
         </div>
-        {userId && userId !== g.authorId && (
+        {userId && userId !== g.authorId && !g.demo && (
           <form onSubmit={sendReply} className="flex items-center gap-2 border-t border-border p-3">
             <input value={reply} onFocus={() => setPaused(true)} onBlur={() => !reply && setPaused(false)} onChange={(e) => setReply(e.target.value)} placeholder={`Reply to ${g.author.username}…`} className="min-w-0 flex-1 rounded-full border border-input bg-transparent px-4 py-2 text-sm outline-none focus:border-primary" />
             <button className="grid h-9 w-9 place-items-center rounded-full bg-primary text-primary-foreground" aria-label="Send"><Send className="h-4 w-4" /></button>

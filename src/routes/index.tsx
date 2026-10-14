@@ -4,6 +4,8 @@ import { RequireAuth, useAuth } from "@/lib/auth";
 import { fetchContent, fetchMyReactions } from "@/lib/content";
 import { ContentCard } from "@/components/ContentCard";
 import { StoriesRail } from "@/components/Stories";
+import { DemoPost } from "@/components/DemoPost";
+import { demoPosts } from "@/lib/demo-content";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -39,7 +41,7 @@ function Feed() {
       <section className="min-w-0 space-y-5 pb-16">
         {isLoading && Array.from({ length: 3 }).map((_, i) => <div key={i} className="h-72 animate-pulse rounded-2xl bg-card" />)}
         {error && <p className="rounded-xl bg-destructive/15 p-4 text-sm">Couldn't load the feed. {(error as Error).message}</p>}
-        {data && data.length === 0 && (
+        {false && data && data.length === 0 && (
           <div className="rounded-2xl border border-dashed border-border p-10 text-center">
             <h2 className="text-2xl font-black">Your feed is empty</h2>
             <p className="mt-2 text-muted-foreground">Share your first post or explore the community.</p>
@@ -50,6 +52,7 @@ function Feed() {
           </div>
         )}
         {r && data?.map((c) => <ContentCard key={c.id} c={c} liked={r.liked.has(c.id)} saved={r.saved.has(c.id)} />)}
+        {demoPosts.map((post) => <DemoPost key={post.id} post={post} />)}
       </section>
     </div>
   );
