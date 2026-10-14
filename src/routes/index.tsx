@@ -12,6 +12,8 @@ export const Route = createFileRoute("/")({
       { name: "description", content: "Your SAC Community feed: posts, reels, tweets, business events, tickets and news." },
       { property: "og:title", content: "SAC Community" },
       { property: "og:description", content: "Share, connect and discover local businesses on SAC Community." },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary_large_image" },
     ],
   }),
   component: () => <RequireAuth><Feed /></RequireAuth>,

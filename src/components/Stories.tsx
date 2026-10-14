@@ -8,6 +8,7 @@ import { useAuth } from "@/lib/auth";
 import { CONTENT_SELECT, type Content } from "@/lib/content";
 import { timeAgo } from "@/lib/media";
 import { UserAvatar } from "./UserAvatar";
+import { Button } from "./ui/button";
 
 type Group = { authorId: string; author: Content["author"]; stories: Content[]; unseen: boolean };
 
@@ -40,35 +41,46 @@ export function StoriesRail() {
   const { profile, userId } = useAuth();
   const { data: groups = [], isLoading } = useStoryGroups();
   const [openIdx, setOpenIdx] = useState<number | null>(null);
+  const [viewerGroups, setViewerGroups] = useState<Group[]>([]);
+  const openStory = (index: number) => { setViewerGroups(groups); setOpenIdx(index); };
   const navigate = useNavigate();
   const railRef = useRef<HTMLDivElement>(null);
   const drag = useRef<{ x: number; left: number; moved: boolean } | null>(null);
+  const suppressClick = useRef(false);
   const hasMine = groups[0]?.authorId === userId;
 
   return (
     <>
       <div
         ref={railRef}
+        aria-label="Community stories"
+        onDragStart={(e) => e.preventDefault()}
+        onClickCapture={(e) => {
+          if (suppressClick.current) { e.preventDefault(); e.stopPropagation(); suppressClick.current = false; }
+        }}
         className="no-scrollbar flex w-full cursor-grab items-start gap-4 overflow-x-auto px-3 py-2 active:cursor-grabbing"
         onPointerDown={(e) => {
           const rail = railRef.current;
+          suppressClick.current = false;
           if (e.pointerType === "mouse" && rail) drag.current = { x: e.clientX, left: rail.scrollLeft, moved: false };
         }}
         onPointerMove={(e) => {
           const rail = railRef.current;
           if (!drag.current || !rail) return;
           const distance = e.clientX - drag.current.x;
-          if (Math.abs(distance) > 4) drag.current.moved = true;
+          if (Math.abs(distance) > 4) { drag.current.moved = true; suppressClick.current = true; }
           rail.scrollLeft = drag.current.left - distance;
         }}
         onPointerUp={() => (drag.current = null)}
         onPointerLeave={() => (drag.current = null)}
+        onPointerCancel={() => (drag.current = null)}
       >
         {userId && (
-          <div className="flex w-16 flex-col items-center gap-1">
-            <button
-              className="relative"
-              onClick={() => (hasMine ? setOpenIdx(0) : navigate({ to: "/create", search: { type: "story" } }))}
+          <div className="flex w-16 shrink-0 flex-col items-center gap-1">
+            <Button
+              variant="ghost"
+              className="relative h-auto rounded-full p-0"
+              onClick={() => (hasMine ? openStory(0) : navigate({ to: "/create", search: { type: "story" } }))}
               aria-label="Your story"
             >
               <UserAvatar src={profile?.avatar_url} name={profile?.display_name} size={60} ring={hasMine ? "unseen" : "seen"} />
@@ -76,20 +88,20 @@ export function StoriesRail() {
                 onClick={(e) => { e.stopPropagation(); navigate({ to: "/create", search: { type: "story" } }); }}
                 className="absolute -bottom-0.5 -right-0.5 grid h-6 w-6 place-items-center rounded-full border-2 border-background bg-primary text-primary-foreground"
               ><Plus className="h-3.5 w-3.5" strokeWidth={3} /></span>
-            </button>
+            </Button>
             <span className="w-full truncate text-center text-[11px] text-muted-foreground">Your story</span>
           </div>
         )}
         {isLoading && Array.from({ length: 4 }).map((_, i) => <div key={i} className="h-[60px] w-[60px] animate-pulse rounded-full bg-secondary" />)}
         {groups.map((g, i) => g.authorId === userId ? null : (
-          <button key={g.authorId} onClick={() => setOpenIdx(i)} className="flex w-16 flex-col items-center gap-1">
+          <Button variant="ghost" key={g.authorId} aria-label={`View ${g.author.username}'s story`} onClick={() => openStory(i)} className="flex h-auto w-16 shrink-0 flex-col items-center gap-1 p-0">
             <UserAvatar src={g.author.avatar_url} name={g.author.display_name} size={60} ring={g.unseen ? "unseen" : "seen"} />
             <span className="w-full truncate text-center text-[11px] text-muted-foreground">{g.author.username}</span>
-          </button>
+          </Button>
         ))}
       </div>
       {openIdx !== null && groups[openIdx] && (
-        <StoryViewer groups={groups} start={openIdx} onClose={() => setOpenIdx(null)} />
+        <StoryViewer groups={viewerGroups} start={openIdx} onClose={() => setOpenIdx(null)} />
       )}
     </>
   );
