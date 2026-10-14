@@ -29,8 +29,8 @@ function Feed() {
   const { data: r } = useReactions();
   return (
     <div className="relative mx-auto max-w-2xl px-2 pt-4 sm:px-5">
-      <aside className="pointer-events-none fixed left-1 top-32 z-30 w-[68px] sm:left-3 sm:top-24 sm:w-20">
-        <div className="pointer-events-auto rounded-full bg-background/40 py-2 backdrop-blur-md">
+      <aside className="sticky top-14 z-30 mb-4 -mx-2 sm:-mx-5">
+        <div className="border-b border-border bg-background/90 backdrop-blur-md">
           <StoriesRail />
         </div>
       </aside>

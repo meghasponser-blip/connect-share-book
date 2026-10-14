@@ -42,16 +42,25 @@ export function StoriesRail() {
   const [openIdx, setOpenIdx] = useState<number | null>(null);
   const navigate = useNavigate();
   const railRef = useRef<HTMLDivElement>(null);
-  const drag = useRef<{ y: number; top: number } | null>(null);
+  const drag = useRef<{ x: number; left: number; moved: boolean } | null>(null);
   const hasMine = groups[0]?.authorId === userId;
 
   return (
     <>
       <div
         ref={railRef}
-        className="no-scrollbar flex max-h-[calc(100vh-10rem)] cursor-grab flex-col items-center gap-4 overflow-y-auto pb-6 active:cursor-grabbing sm:top-24"
-        onPointerDown={(e) => { if (e.pointerType === "mouse") drag.current = { y: e.clientY, top: railRef.current!.scrollTop }; }}
-        onPointerMove={(e) => { if (drag.current) railRef.current!.scrollTop = drag.current.top - (e.clientY - drag.current.y); }}
+        className="no-scrollbar flex w-full cursor-grab items-start gap-4 overflow-x-auto px-3 py-2 active:cursor-grabbing"
+        onPointerDown={(e) => {
+          const rail = railRef.current;
+          if (e.pointerType === "mouse" && rail) drag.current = { x: e.clientX, left: rail.scrollLeft, moved: false };
+        }}
+        onPointerMove={(e) => {
+          const rail = railRef.current;
+          if (!drag.current || !rail) return;
+          const distance = e.clientX - drag.current.x;
+          if (Math.abs(distance) > 4) drag.current.moved = true;
+          rail.scrollLeft = drag.current.left - distance;
+        }}
         onPointerUp={() => (drag.current = null)}
         onPointerLeave={() => (drag.current = null)}
       >
