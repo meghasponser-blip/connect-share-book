@@ -24,7 +24,7 @@ export function ConnectButton({ otherId, size = "sm" }: { otherId: string; size?
   const qc = useQueryClient();
   const { data: conn } = useConnection(otherId);
   if (!userId || userId === otherId) return null;
-  const refresh = () => { qc.invalidateQueries({ queryKey: ["connection"] }); qc.invalidateQueries({ queryKey: ["connections-count"] }); };
+  const refresh = () => { qc.invalidateQueries({ queryKey: ["connection"] }); qc.invalidateQueries({ queryKey: ["connections-count"] }); qc.invalidateQueries({ queryKey: ["connections-list"] }); };
 
   const run = async (p: PromiseLike<{ error: { message: string } | null }>, msg: string) => {
     const { error } = await p;
