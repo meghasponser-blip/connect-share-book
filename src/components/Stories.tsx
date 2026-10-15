@@ -12,7 +12,7 @@ import { Button } from "./ui/button";
 import { createPortal } from "react-dom";
 import { demoStories } from "@/lib/demo-content";
 
-type Group = { authorId: string; author: Pick<Content["author"], "username" | "display_name" | "avatar_url">; stories: Pick<Content, "id" | "title" | "description" | "category" | "media_url" | "media_kind" | "created_at">[]; unseen: boolean; demo?: boolean };
+export type Group = { authorId: string; author: Pick<Content["author"], "username" | "display_name" | "avatar_url">; stories: Pick<Content, "id" | "title" | "description" | "category" | "media_url" | "media_kind" | "created_at">[]; unseen: boolean; demo?: boolean };
 
 export function useStoryGroups() {
   const { userId } = useAuth();
@@ -100,7 +100,7 @@ export function StoriesRail() {
   </>, document.body);
 }
 
-function StoryViewer({ groups, start, onClose, onCreate }: { groups: Group[]; start: number; onClose: () => void; onCreate: () => void }) {
+export function StoryViewer({ groups, start, onClose, onCreate }: { groups: Group[]; start: number; onClose: () => void; onCreate: () => void }) {
   const { userId } = useAuth();
   const qc = useQueryClient();
   const [gi, setGi] = useState(start);

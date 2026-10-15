@@ -22,6 +22,12 @@ export const demoStories = demoAccounts.map((author, index) => ({
   ],
 }));
 
+export const demoHighlights = [
+  { id: "demo-hl-market", label: "Market", cover: market, demo: true, group: demoStories[0] },
+  { id: "demo-hl-chai", label: "Chai", cover: chai, demo: true, group: demoStories[1] },
+  { id: "demo-hl-rooftop", label: "Rooftop", cover: rooftop, demo: true, group: demoStories[2] },
+];
+
 export const demoPosts = [
   { id: "demo-post-market", author: demoAccounts[0], image: market, title: "Colours of Kolkata", caption: "A little morning walk through the flower market. Which colour would you pick? 🌸", likes: 128 },
   { id: "demo-post-chai", author: demoAccounts[1], image: chai, title: "A perfect chai break", caption: "Hot chai, crunchy samosas and good company. A little happiness on a plate. ☕", likes: 86 },
