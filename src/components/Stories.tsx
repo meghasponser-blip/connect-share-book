@@ -41,76 +41,66 @@ export function useStoryGroups() {
 
 export function StoriesRail() {
   const { profile, userId } = useAuth();
-  const { data: realGroups = [], isLoading } = useStoryGroups();
+  const { data: realGroups = [] } = useStoryGroups();
   const groups = useMemo(() => [...realGroups, ...demoStories], [realGroups]);
-  const [openIdx, setOpenIdx] = useState<number | null>(null);
-  const [viewerGroups, setViewerGroups] = useState<Group[]>([]);
-  const openStory = (index: number) => { setViewerGroups(groups); setOpenIdx(index); };
-  const navigate = useNavigate();
-  const railRef = useRef<HTMLDivElement>(null);
-  const drag = useRef<{ x: number; left: number; moved: boolean } | null>(null);
+  const [viewerGroups, setViewerGroups] = useState<Group[] | null>(null);
+  const [position, setPosition] = useState<{ x: number; y: number } | null>(null);
+  const drag = useRef<{ x: number; y: number; left: number; top: number; moved: boolean } | null>(null);
   const suppressClick = useRef(false);
-  const hasMine = groups[0]?.authorId === userId;
+  const navigate = useNavigate();
+  const clamp = (x: number, y: number) => ({
+    x: Math.max(8, Math.min(x, window.innerWidth - 76)),
+    y: Math.max(8, Math.min(y, window.innerHeight - 76)),
+  });
 
-  return (
-    <>
-      <div
-        ref={railRef}
-        aria-label="Community stories"
-        onDragStart={(e) => e.preventDefault()}
-        onClickCapture={(e) => {
-          if (suppressClick.current) { e.preventDefault(); e.stopPropagation(); suppressClick.current = false; }
-        }}
-        className="no-scrollbar flex w-full cursor-grab items-start gap-4 overflow-x-auto px-3 py-2 active:cursor-grabbing"
-        onPointerDown={(e) => {
-          const rail = railRef.current;
-          suppressClick.current = false;
-          if (e.pointerType === "mouse" && rail) drag.current = { x: e.clientX, left: rail.scrollLeft, moved: false };
-        }}
-        onPointerMove={(e) => {
-          const rail = railRef.current;
-          if (!drag.current || !rail) return;
-          const distance = e.clientX - drag.current.x;
-          if (Math.abs(distance) > 4) { drag.current.moved = true; suppressClick.current = true; }
-          rail.scrollLeft = drag.current.left - distance;
-        }}
-        onPointerUp={() => (drag.current = null)}
-        onPointerLeave={() => (drag.current = null)}
-        onPointerCancel={() => (drag.current = null)}
-      >
-        {userId && (
-          <div className="flex w-16 shrink-0 flex-col items-center gap-1">
-            <Button
-              variant="ghost"
-              className="relative h-auto rounded-full p-0"
-              onClick={() => (hasMine ? openStory(0) : navigate({ to: "/create", search: { type: "story" } }))}
-              aria-label="Your story"
-            >
-              <UserAvatar src={profile?.avatar_url} name={profile?.display_name} size={60} ring={hasMine ? "unseen" : "seen"} />
-              <span
-                onClick={(e) => { e.stopPropagation(); navigate({ to: "/create", search: { type: "story" } }); }}
-                className="absolute -bottom-0.5 -right-0.5 grid h-6 w-6 place-items-center rounded-full border-2 border-background bg-primary text-primary-foreground"
-              ><Plus className="h-3.5 w-3.5" strokeWidth={3} /></span>
-            </Button>
-            <span className="w-full truncate text-center text-[11px] text-muted-foreground">Your story</span>
-          </div>
-        )}
-        {isLoading && Array.from({ length: 4 }).map((_, i) => <div key={i} className="h-[60px] w-[60px] animate-pulse rounded-full bg-secondary" />)}
-        {groups.map((g, i) => g.authorId === userId ? null : (
-          <Button variant="ghost" key={g.authorId} aria-label={`View ${g.author.username}'s story`} onClick={() => openStory(i)} className="flex h-auto w-16 shrink-0 flex-col items-center gap-1 p-0">
-            <UserAvatar src={g.author.avatar_url} name={g.author.display_name} size={60} ring={g.unseen ? "unseen" : "seen"} />
-            <span className="w-full truncate text-center text-[11px] text-muted-foreground">{g.author.username}</span>
-          </Button>
-        ))}
-      </div>
-      {openIdx !== null && viewerGroups[openIdx] && createPortal(
-        <StoryViewer groups={viewerGroups} start={openIdx} onClose={() => setOpenIdx(null)} />, document.body
-      )}
-    </>
-  );
+  useEffect(() => {
+    setPosition(clamp(window.innerWidth - 84, window.innerHeight - 160));
+    const resize = () => setPosition((p) => p ? clamp(p.x, p.y) : p);
+    window.addEventListener("resize", resize);
+    return () => window.removeEventListener("resize", resize);
+  }, []);
+
+  if (!position) return null;
+  return createPortal(<>
+    <Button
+      variant="ghost"
+      aria-label="View stories"
+      title="Stories"
+      className="fixed z-40 h-[68px] w-[68px] touch-none select-none rounded-full bg-background/90 p-1 shadow-lg backdrop-blur-md cursor-grab active:cursor-grabbing"
+      style={{ left: position.x, top: position.y }}
+      onDragStart={(e) => e.preventDefault()}
+      onPointerDown={(e) => {
+        if (e.button !== 0) return;
+        suppressClick.current = false;
+        drag.current = { x: e.clientX, y: e.clientY, left: position.x, top: position.y, moved: false };
+        e.currentTarget.setPointerCapture(e.pointerId);
+      }}
+      onPointerMove={(e) => {
+        const d = drag.current;
+        if (!d) return;
+        const dx = e.clientX - d.x;
+        const dy = e.clientY - d.y;
+        if (Math.hypot(dx, dy) > 5) { d.moved = true; suppressClick.current = true; }
+        if (d.moved) setPosition(clamp(d.left + dx, d.top + dy));
+      }}
+      onPointerUp={(e) => {
+        drag.current = null;
+        if (e.currentTarget.hasPointerCapture(e.pointerId)) e.currentTarget.releasePointerCapture(e.pointerId);
+      }}
+      onPointerCancel={() => { drag.current = null; suppressClick.current = true; }}
+      onClick={() => {
+        if (suppressClick.current) { suppressClick.current = false; return; }
+        const others = groups.filter((g) => g.authorId !== userId);
+        setViewerGroups(others.length ? others : groups);
+      }}
+    >
+      <UserAvatar src={profile?.avatar_url} name={profile?.display_name} size={60} ring="unseen" />
+    </Button>
+    {viewerGroups && viewerGroups.length > 0 && <StoryViewer groups={viewerGroups} start={0} onClose={() => setViewerGroups(null)} onCreate={() => { setViewerGroups(null); navigate({ to: "/create", search: { type: "story" } }); }} />}
+  </>, document.body);
 }
 
-function StoryViewer({ groups, start, onClose }: { groups: Group[]; start: number; onClose: () => void }) {
+function StoryViewer({ groups, start, onClose, onCreate }: { groups: Group[]; start: number; onClose: () => void; onCreate: () => void }) {
   const { userId } = useAuth();
   const qc = useQueryClient();
   const [gi, setGi] = useState(start);
@@ -121,6 +111,12 @@ function StoryViewer({ groups, start, onClose }: { groups: Group[]; start: numbe
   const g = groups[gi];
   const s = g?.stories[si];
   const touch = useRef<number | null>(null);
+
+  useEffect(() => {
+    const previous = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => { document.body.style.overflow = previous; };
+  }, []);
 
   const next = useMemo(() => () => {
     if (si < g.stories.length - 1) { setSi(si + 1); return; }
@@ -162,6 +158,7 @@ function StoryViewer({ groups, start, onClose }: { groups: Group[]; start: numbe
     <div role="dialog" aria-modal="true" aria-label="Story viewer" className="fixed inset-0 z-50 grid place-items-center bg-background/95 backdrop-blur"
       onTouchStart={(e) => (touch.current = e.touches[0].clientX)}
       onTouchEnd={(e) => { if (touch.current == null) return; const dx = e.changedTouches[0].clientX - touch.current; if (dx < -50) next(); if (dx > 50) prev(); touch.current = null; }}>
+      <Button variant="secondary" size="icon" onClick={onCreate} className="absolute right-16 top-4 z-20 rounded-full" aria-label="Add your story"><Plus /></Button>
       <Button variant="secondary" size="icon" onClick={onClose} className="absolute right-4 top-4 z-20 rounded-full" aria-label="Close"><X className="h-5 w-5" /></Button>
       <div className="relative flex h-full w-full max-w-md flex-col overflow-hidden bg-card sm:h-[90vh] sm:rounded-3xl">
         <div className="absolute inset-x-3 top-3 z-10 flex gap-1">
@@ -193,7 +190,7 @@ function StoryViewer({ groups, start, onClose }: { groups: Group[]; start: numbe
         {userId && userId !== g.authorId && !g.demo && (
           <form onSubmit={sendReply} className="flex items-center gap-2 border-t border-border p-3">
             <input value={reply} onFocus={() => setPaused(true)} onBlur={() => !reply && setPaused(false)} onChange={(e) => setReply(e.target.value)} placeholder={`Reply to ${g.author.username}…`} className="min-w-0 flex-1 rounded-full border border-input bg-transparent px-4 py-2 text-sm outline-none focus:border-primary" />
-            <button className="grid h-9 w-9 place-items-center rounded-full bg-primary text-primary-foreground" aria-label="Send"><Send className="h-4 w-4" /></button>
+            <Button type="submit" size="icon" className="rounded-full" aria-label="Send"><Send className="h-4 w-4" /></Button>
           </form>
         )}
       </div>
