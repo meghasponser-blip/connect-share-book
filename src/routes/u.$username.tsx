@@ -2,10 +2,11 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { RequireAuth } from "@/lib/auth";
+import { RequireAuth, useAuth } from "@/lib/auth";
 import { fetchContent, TYPE_LABEL } from "@/lib/content";
 import { AccountBadge, UserAvatar } from "@/components/UserAvatar";
 import { ConnectButton } from "@/components/ConnectButton";
+import { Highlights } from "@/components/Highlights";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/u/$username")({
@@ -15,6 +16,7 @@ export const Route = createFileRoute("/u/$username")({
 
 function Profile() {
   const { username } = Route.useParams();
+  const { userId } = useAuth();
   const [tab, setTab] = useState("all");
   const { data: p } = useQuery({ queryKey: ["profile", username], queryFn: async () => (await supabase.from("profiles").select("*").eq("username", username).maybeSingle()).data });
   const { data: items = [] } = useQuery({ queryKey: ["profile-content", p?.id], enabled: !!p, queryFn: () => fetchContent({ authorId: p!.id, limit: 100 }) });
@@ -33,6 +35,7 @@ function Profile() {
         {p.website && <a href={p.website} target="_blank" rel="noreferrer" className="mt-1 text-sm text-primary">{p.website}</a>}
         <div className="mt-4"><ConnectButton otherId={p.id} size="default" /></div>
       </div>
+      <Highlights authorId={p.id} username={p.username} displayName={p.display_name} avatarUrl={p.avatar_url} isSelf={p.id === userId} />
       <div className="no-scrollbar mt-6 flex gap-2 overflow-x-auto border-b border-border">
         {tabs.map((t) => <button key={t} onClick={() => setTab(t)} className={cn("shrink-0 border-b-2 px-3 py-2 text-sm capitalize", tab === t ? "border-primary text-foreground" : "border-transparent text-muted-foreground")}>{t === "all" ? "All" : TYPE_LABEL[t] + "s"}</button>)}
       </div>
