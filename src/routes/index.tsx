@@ -1,4 +1,4 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { RequireAuth, useAuth } from "@/lib/auth";
 import { fetchContent, fetchMyReactions } from "@/lib/content";
@@ -33,24 +33,10 @@ function Feed() {
   const { data: r } = useReactions();
   return (
     <div className="relative mx-auto max-w-2xl px-2 pt-4 sm:px-5">
-      <aside className="sticky top-14 z-30 mb-4 -mx-2 sm:-mx-5">
-        <div className="border-b border-border bg-background/90 backdrop-blur-md">
-          <StoriesRail />
-        </div>
-      </aside>
+      <StoriesRail />
       <section className="min-w-0 space-y-5 pb-16">
         {isLoading && Array.from({ length: 3 }).map((_, i) => <div key={i} className="h-72 animate-pulse rounded-2xl bg-card" />)}
         {error && <p className="rounded-xl bg-destructive/15 p-4 text-sm">Couldn't load the feed. {(error as Error).message}</p>}
-        {false && data && data.length === 0 && (
-          <div className="rounded-2xl border border-dashed border-border p-10 text-center">
-            <h2 className="text-2xl font-black">Your feed is empty</h2>
-            <p className="mt-2 text-muted-foreground">Share your first post or explore the community.</p>
-            <div className="mt-5 flex justify-center gap-2">
-              <Link to="/create" search={{ type: "post" }} className="rounded-full bg-gradient-primary px-5 py-2 text-sm font-semibold text-primary-foreground">Create post</Link>
-              <Link to="/explore" className="rounded-full border border-border px-5 py-2 text-sm">Explore</Link>
-            </div>
-          </div>
-        )}
         {r && data?.map((c) => <ContentCard key={c.id} c={c} liked={r.liked.has(c.id)} saved={r.saved.has(c.id)} />)}
         {demoPosts.map((post) => <DemoPost key={post.id} post={post} />)}
       </section>

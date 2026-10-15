@@ -9,6 +9,6 @@
 > the editor, so keep the branch in a working state.
 <!-- LOVABLE:END -->
 
-- Keep the home story list as a horizontal, swipeable rail so every account remains easy to reach on mobile.
+- Expose home stories through one pointer-draggable floating button; keep the position within viewport bounds and distinguish dragging from tapping.
 - Keep sample content in an explicit local fixture module, visibly labeled Demo, and never write sample interactions to real accounts.
-- Render the story viewer in a body portal so the sticky story rail cannot clip its full-screen display.
+- Render the floating story control and viewer in body portals so surrounding page elements cannot clip them.
