@@ -1,7 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { useEffect, useRef, useState } from "react";
-import { Heart, MessageCircle, Send, Bookmark, Volume2, VolumeX } from "lucide-react";
+import { Heart, Send, Bookmark, Volume2, VolumeX } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { RequireAuth, useAuth } from "@/lib/auth";
@@ -75,7 +75,7 @@ function Reel({ c, liked, saved, muted, setMuted }: { c: Content; liked: boolean
       <button onClick={() => setMuted(!muted)} className="absolute right-3 top-3 rounded-full bg-background/60 p-2" aria-label="Sound">{muted ? <VolumeX className="h-4 w-4" /> : <Volume2 className="h-4 w-4" />}</button>
       <div className="absolute bottom-24 right-3 flex flex-col items-center gap-5 text-xs font-semibold">
         <button onClick={like} className="flex flex-col items-center gap-1"><Heart className={cn("h-8 w-8", isLiked && "fill-primary text-primary")} />{count}</button>
-        <button onClick={() => setOpen(true)} className="flex flex-col items-center gap-1"><MessageCircle className="h-8 w-8" />{c.comments?.[0]?.count ?? 0}</button>
+        <button onClick={() => setOpen(true)} className="flex flex-col items-center gap-1"><span aria-hidden="true" className="text-3xl leading-none">🗣️</span>{c.comments?.[0]?.count ?? 0}</button>
         <button onClick={share}><Send className="h-7 w-7" /></button>
         <button onClick={save}><Bookmark className={cn("h-7 w-7", isSaved && "fill-foreground")} /></button>
       </div>
