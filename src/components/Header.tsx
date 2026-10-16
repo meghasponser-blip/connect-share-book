@@ -1,7 +1,7 @@
 import { Link, useNavigate } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
-import { Home, Compass, Bell, MessageCircle, Menu, Film, Ticket, LogOut, Settings, X } from "lucide-react";
+import { Home, Compass, Bell, Menu, Film, Ticket, LogOut, Settings, X } from "lucide-react";
 import { Wordmark } from "./Logo";
 import { UserAvatar } from "./UserAvatar";
 import { useAuth } from "@/lib/auth";
@@ -41,7 +41,7 @@ export function Header() {
         <Bell className="h-5 w-5" />
         {unread > 0 && <span className="absolute right-1 top-1 grid h-4 min-w-4 place-items-center rounded-full bg-primary px-1 text-[10px] font-bold text-primary-foreground">{unread}</span>}
       </Link>
-      <Link to="/messages" className={linkCls} activeProps={active} aria-label="Messages"><MessageCircle className="h-5 w-5" /></Link>
+      <Link to="/messages" className={linkCls} activeProps={active} aria-label="Messages"><span aria-hidden="true" className="text-lg leading-none">🗣️</span></Link>
     </>
   );
 

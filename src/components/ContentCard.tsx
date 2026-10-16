@@ -1,7 +1,7 @@
 import { Link } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
-import { Heart, MessageCircle, Send, Bookmark, CalendarDays, MapPin, Ticket, Newspaper, Trash2 } from "lucide-react";
+import { Heart, Send, Bookmark, CalendarDays, MapPin, Ticket, Newspaper, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth";
@@ -111,7 +111,8 @@ export function ContentCard({ c, liked, saved, compact }: { c: Content; liked: b
 
   return (
     <article className="animate-rise overflow-hidden rounded-2xl border border-border bg-card">
-      <header className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3 p-4">
+      <header className="space-y-2 p-4">
+        <div className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3">
         <Link to="/u/$username" params={{ username: c.author.username }} className="flex min-w-0 items-center gap-3">
           <UserAvatar src={c.author.avatar_url} name={c.author.display_name} size={42} />
           <div className="min-w-0">
@@ -126,10 +127,12 @@ export function ContentCard({ c, liked, saved, compact }: { c: Content; liked: b
           <span className="rounded-full border border-primary/40 px-2.5 py-0.5 text-[11px] font-semibold text-primary">{TYPE_LABEL[c.type]}</span>
           {userId === c.author_id && <button onClick={remove} aria-label="Delete" className="text-muted-foreground hover:text-destructive"><Trash2 className="h-4 w-4" /></button>}
         </div>
+        </div>
+        {c.title && !isTweet && <h3 className="truncate font-bold leading-tight">{c.title}</h3>}
       </header>
 
       <div className="space-y-3 px-4">
-        {c.title && <h3 className={cn("font-bold leading-tight", isTweet ? "text-xl" : "text-lg")}>{c.title}</h3>}
+        {isTweet && c.title && <h3 className="font-bold leading-tight text-xl">{c.title}</h3>}
         {c.description && <p className={cn("whitespace-pre-wrap text-sm text-muted-foreground", isTweet && "text-base text-foreground")}>{c.description}</p>}
         <ContentDetails c={c} />
       </div>
@@ -157,7 +160,7 @@ export function ContentCard({ c, liked, saved, compact }: { c: Content; liked: b
           <button onClick={toggleLike} className="flex items-center gap-1.5 text-sm transition active:scale-90" aria-label="Like">
             <Heart className={cn("h-6 w-6", isLiked && "fill-primary text-primary")} />{likeCount}
           </button>
-          <Link to="/c/$id" params={{ id: c.id }} className="flex items-center gap-1.5 text-sm" aria-label="Comments"><MessageCircle className="h-6 w-6" />{commentCount}</Link>
+          <Link to="/c/$id" params={{ id: c.id }} className="flex items-center gap-1.5 text-sm" aria-label="Comments"><span aria-hidden="true" className="text-2xl leading-none">🗣️</span>{commentCount}</Link>
           <button onClick={share} aria-label="Share"><Send className="h-6 w-6" /></button>
           <button onClick={toggleSave} className="ml-auto" aria-label="Save"><Bookmark className={cn("h-6 w-6", isSaved && "fill-foreground")} /></button>
         </div>
