@@ -9,8 +9,8 @@ type Row = { id: string; requester_id: string; addressee_id: string; requester: 
 
 const PERSON = "id, username, display_name, avatar_url";
 
-export function ConnectionsList({ profileId }: { profileId: string }) {
-  const { data: rows = [], isLoading } = useQuery({
+export function ConnectionsList({ profileId, discover = false }: { profileId: string; discover?: boolean }) {
+  const { data: rows = [], isLoading, error } = useQuery({
     queryKey: ["connections-list", profileId],
     queryFn: async () => {
       const { data, error } = await supabase
@@ -24,12 +24,25 @@ export function ConnectionsList({ profileId }: { profileId: string }) {
     },
   });
 
-  if (isLoading) return <p className="py-6 text-center text-sm text-muted-foreground">Loading connections…</p>;
+  const { data: suggestions = [], isLoading: suggestionsLoading, error: suggestionsError } = useQuery({
+    queryKey: ["connection-suggestions", profileId],
+    enabled: discover,
+    queryFn: async () => {
+      const { data, error } = await supabase.from("profiles").select(PERSON).neq("id", profileId).order("created_at", { ascending: false }).limit(50);
+      if (error) throw error;
+      return data as Person[];
+    },
+  });
 
-  const people = rows.map((r) => (r.requester_id === profileId ? r.addressee : r.requester)).filter(Boolean) as Person[];
+  if (isLoading || (discover && suggestionsLoading)) return <p className="py-6 text-center text-sm text-muted-foreground">Loading people…</p>;
+  if (error || (discover && suggestionsError)) return <p role="alert" className="py-6 text-center text-sm text-destructive">Couldn't load people. Please try again.</p>;
+
+  const connected = rows.map((r) => (r.requester_id === profileId ? r.addressee : r.requester)).filter(Boolean) as Person[];
+  const connectedIds = new Set(connected.map((p) => p.id));
+  const people = discover ? suggestions.filter((p) => !connectedIds.has(p.id)) : connected;
 
   if (people.length === 0)
-    return <p className="py-6 text-center text-sm text-muted-foreground">No connections yet.</p>;
+    return <p className="py-6 text-center text-sm text-muted-foreground">{discover ? "No new people to connect with yet." : "No connections yet."}</p>;
 
   return (
     <ul className="divide-y divide-border">
