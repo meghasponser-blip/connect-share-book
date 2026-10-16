@@ -1,24 +1,12 @@
 import { Link, useNavigate } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
-import { Home, Compass, PlusSquare, Bell, MessageCircle, Search, Menu, Film, Ticket, LogOut, Settings, X, Image, Clapperboard, CircleDot, Type, CalendarDays, Newspaper } from "lucide-react";
+import { Home, Compass, Bell, MessageCircle, Menu, Film, Ticket, LogOut, Settings, X } from "lucide-react";
 import { Wordmark } from "./Logo";
 import { UserAvatar } from "./UserAvatar";
 import { useAuth } from "@/lib/auth";
 import { supabase } from "@/integrations/supabase/client";
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
-
-const CREATE_PERSONAL = [
-  { type: "post", label: "Create Post", icon: Image },
-  { type: "reel", label: "Create Reel", icon: Clapperboard },
-  { type: "story", label: "Create Story", icon: CircleDot },
-  { type: "tweet", label: "Create Tweet", icon: Type },
-] as const;
-const CREATE_BUSINESS = [
-  { type: "event", label: "Create Event", icon: CalendarDays },
-  { type: "ticket", label: "Create Ticket", icon: Ticket },
-  { type: "news", label: "Publish News", icon: Newspaper },
-] as const;
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 
 const linkCls = "relative grid h-10 w-10 place-items-center rounded-xl text-muted-foreground transition hover:bg-secondary hover:text-foreground";
 const active = { className: "!text-primary bg-secondary" };
@@ -31,7 +19,8 @@ export function Header() {
     queryKey: ["unread", userId],
     enabled: !!userId,
     queryFn: async () => {
-      const { count } = await supabase.from("notifications").select("id", { count: "exact", head: true }).eq("user_id", userId!).eq("read", false);
+      if (!userId) return 0;
+      const { count } = await supabase.from("notifications").select("id", { count: "exact", head: true }).eq("user_id", userId).eq("read", false);
       return count ?? 0;
     },
   });
@@ -43,32 +32,16 @@ export function Header() {
     return () => { supabase.removeChannel(ch); };
   }, [userId, refetch]);
 
-  const options = profile?.account_type === "business" ? [...CREATE_PERSONAL, ...CREATE_BUSINESS] : CREATE_PERSONAL;
-
   const nav = (
     <>
       <Link to="/" className={linkCls} activeProps={active} activeOptions={{ exact: true }} aria-label="Home"><Home className="h-5 w-5" /></Link>
-      <Link to="/explore" className={linkCls} activeProps={active} aria-label="Explore"><Compass className="h-5 w-5" /></Link>
       <Link to="/reels" className={linkCls} activeProps={active} aria-label="Reels"><Film className="h-5 w-5" /></Link>
-      <DropdownMenu>
-        <DropdownMenuTrigger className="grid h-10 w-10 place-items-center rounded-xl bg-gradient-primary text-primary-foreground shadow-glow transition hover:brightness-110" aria-label="Create">
-          <PlusSquare className="h-5 w-5" />
-        </DropdownMenuTrigger>
-        <DropdownMenuContent align="center" className="w-52">
-          <DropdownMenuLabel>Create</DropdownMenuLabel>
-          {options.map((o) => (
-            <DropdownMenuItem key={o.type} onSelect={() => navigate({ to: "/create", search: { type: o.type } })}>
-              <o.icon className="mr-2 h-4 w-4 text-primary" /> {o.label}
-            </DropdownMenuItem>
-          ))}
-        </DropdownMenuContent>
-      </DropdownMenu>
+      <Link to="/explore" className={linkCls} activeProps={active} aria-label="Explore"><Compass className="h-5 w-5" /></Link>
       <Link to="/notifications" className={linkCls} activeProps={active} aria-label="Notifications">
         <Bell className="h-5 w-5" />
         {unread > 0 && <span className="absolute right-1 top-1 grid h-4 min-w-4 place-items-center rounded-full bg-primary px-1 text-[10px] font-bold text-primary-foreground">{unread}</span>}
       </Link>
       <Link to="/messages" className={linkCls} activeProps={active} aria-label="Messages"><MessageCircle className="h-5 w-5" /></Link>
-      <Link to="/explore" search={{ focus: 1 }} className={linkCls + " hidden md:grid"} aria-label="Search"><Search className="h-5 w-5" /></Link>
     </>
   );
 
