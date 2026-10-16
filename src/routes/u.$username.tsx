@@ -9,6 +9,7 @@ import { ConnectButton } from "@/components/ConnectButton";
 import { Highlights } from "@/components/Highlights";
 import { ConnectionsList } from "@/components/ConnectionsList";
 import { Button } from "@/components/ui/button";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/u/$username")({
@@ -21,6 +22,7 @@ function Profile() {
   const { userId } = useAuth();
   const [tab, setTab] = useState("all");
   const [peopleTab, setPeopleTab] = useState<"connected" | "connect">("connected");
+  const [peopleOpen, setPeopleOpen] = useState(false);
   const { data: p } = useQuery({ queryKey: ["profile", username], queryFn: async () => (await supabase.from("profiles").select("*").eq("username", username).maybeSingle()).data });
   const { data: items = [] } = useQuery({ queryKey: ["profile-content", p?.id], enabled: !!p, queryFn: () => p ? fetchContent({ authorId: p.id, limit: 100 }) : [] });
   const { data: count = 0 } = useQuery({ queryKey: ["connections-count", p?.id], enabled: !!p, queryFn: async () => {
@@ -36,24 +38,29 @@ function Profile() {
         <UserAvatar src={p.avatar_url} name={p.display_name} size={96} />
         <h1 className="mt-3 text-2xl font-black">{p.display_name}</h1>
         <div className="mt-1 flex items-center gap-2 text-sm text-muted-foreground">@{p.username}<AccountBadge type={p.account_type} /></div>
-        <div className="mt-3 flex items-center gap-6 text-sm"><Button variant="ghost" className="h-auto gap-1 p-0" onClick={() => { setPeopleTab("connected"); document.getElementById("profile-connections")?.scrollIntoView({ block: "center" }); }}><b>{count}</b> Connections</Button><span><b>{items.length}</b> Posts</span></div>
+        <div className="mt-3 flex flex-wrap items-center justify-center gap-x-5 gap-y-2 text-sm">
+          <Button variant="ghost" className="h-auto gap-1 p-0" onClick={() => { setPeopleTab("connected"); setPeopleOpen(true); }}><b>{count}</b> Connections</Button>
+          <Button variant="ghost" className="h-auto p-0" onClick={() => { setPeopleTab("connect"); setPeopleOpen(true); }}>Connect</Button>
+          <Button variant="ghost" className="h-auto p-0" onClick={() => { setPeopleTab("connected"); setPeopleOpen(true); }}>Connected</Button>
+          <span><b>{items.length}</b> Posts</span>
+        </div>
         {p.bio && <p className="mt-3 max-w-md text-sm">{p.bio}</p>}
         {p.website && <a href={p.website} target="_blank" rel="noreferrer" className="mt-1 text-sm text-primary">{p.website}</a>}
         <div className="mt-4"><ConnectButton otherId={p.id} size="default" /></div>
       </div>
       <Highlights authorId={p.id} username={p.username} displayName={p.display_name} avatarUrl={p.avatar_url} isSelf={p.id === userId} />
-      <section id="profile-connections" aria-label="Connections" className="mt-6 border-y border-border py-4">
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          <h2 className="text-base font-semibold">Connections <span className="text-sm text-muted-foreground">{count}</span></h2>
+      <Dialog open={peopleOpen} onOpenChange={setPeopleOpen}>
+        <DialogContent className="max-h-[80dvh] w-[calc(100%-2rem)] overflow-y-auto rounded-lg" aria-describedby={undefined}>
+          <DialogHeader><DialogTitle>Connections · {count}</DialogTitle></DialogHeader>
           <div role="tablist" aria-label="People" className="flex gap-1">
             <Button role="tab" aria-selected={peopleTab === "connected"} aria-controls="profile-people" variant={peopleTab === "connected" ? "secondary" : "ghost"} size="sm" onClick={() => setPeopleTab("connected")}>Connected</Button>
             <Button role="tab" aria-selected={peopleTab === "connect"} aria-controls="profile-people" variant={peopleTab === "connect" ? "secondary" : "ghost"} size="sm" onClick={() => setPeopleTab("connect")}>Connect</Button>
           </div>
-        </div>
         <div id="profile-people" role="tabpanel" aria-label={peopleTab === "connected" ? "Connected people" : "People to connect with"}>
           <ConnectionsList profileId={p.id} discover={peopleTab === "connect"} />
         </div>
-      </section>
+        </DialogContent>
+      </Dialog>
       <div className="no-scrollbar mt-6 flex gap-2 overflow-x-auto border-b border-border">
         {tabs.map((t) => <button key={t} onClick={() => setTab(t)} className={cn("shrink-0 border-b-2 px-3 py-2 text-sm capitalize", tab === t ? "border-primary text-foreground" : "border-transparent text-muted-foreground")}>{t === "all" ? "All" : TYPE_LABEL[t] + "s"}</button>)}
       </div>
